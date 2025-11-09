@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usage Examples</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/why">Why qet?</a>
+      <a href="/how">How It Works</a>
+      <a href="/what-it-is-not">What it's not</a>
+      <a href="/examples">Examples</a>
+      <a href="/specs">Specs</a>
+    </nav>
+    <main>
+      <h1 title="Usage Examples">Usage Examples</h1>
+<h3>Adding a Package</h3>
+<p>You can add a package using its canonical <code>qet</code> name. <code>qet</code> will automatically determine the best installation method.</p>
+<pre><code class="language-bash"># Install the 'htop' utility
+qet add @utils/htop
+</code></pre>
+<p>This might translate to one of the following commands, depending on your system and configuration:</p>
+<ul>
+<li>On Debian/Ubuntu: <code>sudo apt-get install -y htop</code></li>
+<li>On Fedora/CentOS: <code>sudo dnf install -y htop</code></li>
+<li>On Arch Linux: <code>sudo pacman -S --noconfirm htop</code></li>
+</ul>
+<h3>Removing a Package</h3>
+<p>To remove a package, use the <code>remove</code> command with the same <code>qet</code> name.</p>
+<pre><code class="language-bash">qet remove @utils/htop
+</code></pre>
+<h3>Specifying an Installation Method</h3>
+<p>If a package is available from multiple sources, you can manually specify which one to use with the <code>--using</code> flag.</p>
+<pre><code class="language-bash"># Install Visual Studio Code as a Snap package
+qet add @microsoft/vscode --using snap
+</code></pre>
+<h3>Syncing with a Qetfile</h3>
+<p>You can define a list of desired packages in a <code>Qetfile</code> and use the <code>sync</code> command to install all of them. This is useful for bootstrapping a new system.</p>
+<p>Create a file named <code>Qetfile</code> with the following content:</p>
+<pre><code class="language-toml"># Qetfile
+
+[[packages]]
+qet_name = &quot;@utils/htop&quot;
+method = &quot;apt&quot;
+
+[[packages]]
+qet_name = &quot;@microsoft/vscode&quot;
+method = &quot;snap&quot;
+
+[[packages]]
+qet_name = &quot;@node/nodejs&quot;
+method = &quot;npm&quot;
+</code></pre>
+<p>Then, run the <code>sync</code> command in the same directory:</p>
+<pre><code class="language-bash">qet sync
+</code></pre>
+<p><code>qet</code> will analyze the <code>Qetfile</code> and install any missing packages.</p>
+<h3>Creating a Snapshot</h3>
+<p>You can generate a <code>Qetfile</code> from the packages you've already installed with <code>qet</code>. This is useful for saving your current setup.</p>
+<pre><code class="language-bash">qet snapshot &gt; Qetfile
+</code></pre>
+<p>This will create a <code>Qetfile</code> in the current directory containing all your <code>qet</code>-managed packages.</p>
+
+    </main>
+    <script src="/main.js"></script>
+  </body>
+</html>

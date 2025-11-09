@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Specification</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/how">How It Works</a>
+      <a href="/docs">Docs</a>
+    </nav>
+    <main>
+      <h1 title="Technical Specification">Technical Specification</h1>
+###### qet: Technical Specification and Engineering Guide
+<h6>1. Introduction</h6>
+<p>This document outlines the technical specification for <code>qet</code>, a command-line meta package manager for Linux. <code>qet</code> is designed to provide a unified, user-configurable abstraction layer over the various software installation systems available on Linux. It acts as a smart dispatcher, translating a single, intuitive command set into the appropriate calls for native tools like <code>apt</code>, <code>dnf</code>, <code>npm</code>, or even custom installation scripts.</p>
+<p>The target user is a developer, power user, or system administrator who works across multiple Linux environments and requires a consistent, reproducible, and efficient way to manage their software collection.</p>
+<p>This document will detail the project's core philosophy, its filesystem architecture, the full command-line interface specification, the user interface rendering logic, and the required error handling behaviors.</p>
+<h6>2. Core Philosophy and Design Principles</h6>
+<p>The engineering team should adhere to the following principles when making implementation decisions.</p>
+<ul>
+<li>
+<p><strong>Unification:</strong> The primary goal is to provide a single, consistent command set (<code>qet add</code>, <code>qet remove</code>, <code>qet upgrade</code>) for all software. The user experience should be as uniform as possible, regardless of the underlying package manager being used.</p>
+</li>
+<li>
+<p><strong>Configuration over Convention:</strong> <code>qet</code> should not make assumptions on behalf of the user. The user must have explicit control over which installation sources are used and in what order of priority. This is achieved through a clear and simple configuration file.</p>
+</li>
+<li>
+<p><strong>Reproducibility:</strong> A user must be able to snapshot their managed software collection and reliably replicate that setup on another machine, even if that machine runs a different Linux distribution.</p>
+</li>
+<li>
+<p><strong>The &quot;Plumbing First&quot; Strategy:</strong> To provide a polished user interface, <code>qet</code> must prefer the use of script-friendly, stable &quot;plumbing&quot; commands (e.g., <code>apt-get</code>) over interactive &quot;porcelain&quot; commands (e.g., <code>apt</code>). This allows <code>qet</code> to parse a predictable output stream to render its own unified UI.</p>
+</li>
+<li>
+<p><strong>Graceful Fallback:</strong> The system must be resilient. If at any point the parsing of a plumbing command's output fails, or if a plumbing command is not available, <code>qet</code> must immediately and automatically fall back to streaming the raw output of the standard command. The tool should become less &quot;pretty,&quot; but it must never fail silently or hide critical information from the user.</p>
+</li>
+</ul>
+<h6>3. Filesystem Architecture and Data Flow</h6>
+<p>The logic and state of <code>qet</code> are driven by a set of well-defined TOML files. It is essential to understand the distinct role of each file. We can separate them into two categories: the files that the user directly interacts with to define their desired state, and the internal files that <code>qet</code> uses to manage its operations and current state.</p>
+<h6>How a User Interacts with qet</h6>
+<p>This section describes the files that a user will create or manage to control the application's behavior and replicate their environment.</p>
+<h6>3.1. Configuring Preferences: The <code>conf.toml</code> File</h6>
+<p>As a user, your primary point of interaction with <code>qet</code>'s configuration is through the <code>conf.toml</code> file. This is where you tailor the tool's behavior to match your personal workflow and the conventions of your chosen distribution. It gives you explicit control over which software sources <code>qet</code> should trust and in what order it should try them.</p>
+<p><strong>Example <code>~/.config/qet/conf.toml</code>:</strong></p>
+<p>Here is an example for a user on a Fedora system who does Node.js and Python development. They prefer <code>npm</code> and <code>uvx</code> for their respective ecosystems and fall back to the native <code>dnf</code> for everything else.</p>
+<pre><code class="language-toml"># A list of installation methods, ordered by user priority. `qet` will
+# try these from top to bottom when automatically selecting a source.
+priority = [
+  &quot;npm&quot;,      # For Node.js/JavaScript tools
+  &quot;uvx&quot;,      # For Python CLI tools
+  &quot;dnf&quot;,      # Native system package manager for everything else
+  &quot;snap&quot;,     # For complex apps or things to be sandboxed
+  &quot;script&quot;,   # For installers from websites (e.g., Docker)
+]
+
+# A list of methods to explicitly ignore.
+exclude = [&quot;flatpak&quot;]
+
+[defaults]
+# The command-line tool to use for downloading remote content.
+download_tool = &quot;curl&quot;
+</code></pre>
+<p><strong>Specification for <code>conf.toml</code>:</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Key</th>
+<th style="text-align:left">Type</th>
+<th style="text-align:left">Required</th>
+<th style="text-align:left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>priority</code></td>
+<td style="text-align:left">Array of Strings</td>
+<td style="text-align:left">Yes</td>
+<td style="text-align:left">An ordered list of method names. When <code>qet add</code> is run without <code>--using</code>, the application will check for a package candidate in this order.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>exclude</code></td>
+<td style="text-align:left">Array of Strings</td>
+<td style="text-align:left">No</td>
+<td style="text-align:left">A list of method names to explicitly ignore during automatic source selection.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>[defaults]</code></td>
+<td style="text-align:left">TOML Table</td>
+<td style="text-align:left">No</td>
+<td style="text-align:left">A table for default tool settings and other global configurations.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>download_tool</code></td>
+<td style="text-align:left">String</td>
+<td style="text-align:left">No</td>
+<td style="text-align:left">A key within the <code>[defaults]</code> table. Specifies the command-line tool to use for downloading. Valid values include &quot;curl&quot; or &quot;wget&quot;. Defaults to &quot;curl&quot; if not specified.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h6>3.2. Reproducing an Environment: The <code>Qetfile</code></h6>
+<p>Once your system is configured to your liking, <code>qet</code>'s most powerful feature is its ability to replicate that environment. This is achieved through the <code>snapshot</code> and <code>sync</code> commands, which use a <code>Qetfile</code>. This file is a declarative, portable list of your desired software and your preferred installation method for each package. It is designed to be stored in a version control system, such as a dotfiles repository.</p>
+<p><strong>Example <code>Qetfile</code>:</strong></p>
+<p>This file was generated by a user on an Ubuntu machine who wants to be able to recreate their setup on any other system.</p>
+<pre><code class="language-toml"># This file was generated by `qet snapshot`. It declares my desired software setup.
+
+[[packages]]
+qet_name = &quot;@docker/engine&quot;
+method = &quot;script&quot; # I specifically want Docker from the official script.
+
+[[packages]]
+qet_name = &quot;@utils/ripgrep&quot;
+method = &quot;apt&quot;    # On my original system, the native package was best.
+
+[[packages]]
+qet_name = &quot;@google/gemini-cli&quot;
+method = &quot;npm&quot;    # This should always be installed via npm.
+</code></pre>
+<p><strong>Specification for <code>Qetfile</code>:</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Key</th>
+<th style="text-align:left">Type</th>
+<th style="text-align:left">Required</th>
+<th style="text-align:left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>[[packages]]</code></td>
+<td style="text-align:left">Array of Tables</td>
+<td style="text-align:left">Yes</td>
+<td style="text-align:left">The top-level key defining a list of package records. This directive must be repeated for each package.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>qet_name</code></td>
+<td style="text-align:left">String</td>
+<td style="text-align:left">Yes</td>
+<td style="text-align:left">The canonical, unique <code>qet</code> name for the package (e.g., <code>@&quot;scope/name&quot;</code>).</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>method</code></td>
+<td style="text-align:left">String</td>
+<td style="text-align:left">Yes</td>
+<td style="text-align:left">The installation method that the user prefers for this package. This is used by <code>qet sync</code> to preserve the user's original intent.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Note on Syntax:</strong> The <code>[[packages]]</code> directive is the TOML syntax for defining an array of objects. It is not a section header. Each <code>[[packages]]</code> line signals the start of a new, distinct package record in the list.</p>
+<hr>
+<h6>Under the Hood: How <code>qet</code> Manages Its State and Knowledge</h6>
+<p>This section describes the internal files that <code>qet</code> creates and manages to perform its functions. While users do not typically edit these files, understanding their role is critical for the engineering team.</p>
+<h6>3.3. Tracking State: The Installation Manifest (<code>manifest.toml</code>)</h6>
+<p>For <code>qet</code> to perform its tasks, it needs to maintain a persistent record of its actions. This is the purpose of the manifest file, located at <code>~/.local/share/qet/manifest.toml</code>. This file is <code>qet</code>'s memory—an automatically managed log of every package installed, including metadata about how it was installed. It is the single source of truth for the <code>remove</code>, <code>upgrade</code>, and <code>list</code> commands. <strong>It must not be edited by the user, and all writes to it must be atomic.</strong></p>
+<p><strong>Example <code>~/.local/share/qet/manifest.toml</code>:</strong></p>
+<p>This manifest reflects the state of the Ubuntu system from the example above.</p>
+<pre><code class="language-toml">[[packages]]
+qet_name = &quot;@docker/engine&quot;
+method = &quot;script&quot;
+source_url = &quot;https://get.docker.com&quot;
+install_date = &quot;2025-11-10T18:20:00Z&quot;
+
+[[packages]]
+qet_name = &quot;@utils/ripgrep&quot;
+method = &quot;apt&quot;
+package_name = &quot;ripgrep&quot;
+install_date = &quot;2025-11-10T18:21:15Z&quot;
+
+[[packages]]
+qet_name = &quot;@google/gemini-cli&quot;
+method = &quot;npm&quot;
+package_name = &quot;@google/gemini-cli&quot;
+install_date = &quot;2025-11-10T18:22:05Z&quot;
+</code></pre>
+<p><strong>Specification for <code>manifest.toml</code>:</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Key</th>
+<th style="text-align:left">Type</th>
+<th style="text-align:left">Required</th>
+<th style="text-align:left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>[[packages]]</code></td>
+<td style="text-align:left">Array of Tables</td>
+<td style="text-align:left">Yes</td>
+<td style="text-align:left">The top-level key defining the list of installed package records. This directive is repeated for each package.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>qet_name</code></td>
+<td style="text-align:left">String</td>
+<td style="text-align:left">Yes</td>
+<td style="text-align:left">The canonical <code>qet</code> name for the package. Used as the primary key.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>method</code></td>
+<td style="text-align:left">String</td>
+<td style="text-align:left">Yes</td>
+<td style="text-align:left">The installation method that was successfully used to install the package.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>package_name</code></td>
+<td style="text-align:left">String</td>
+<td style="text-align:left">Conditional</td>
+<td style="text-align:left">The name of the package as recognized by the native package manager. Required for methods like <code>apt</code>, <code>dnf</code>, <code>npm</code>, etc.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>source_url</code></td>
+<td style="text-align:left">String</td>
+<td style="text-align:left">Conditional</td>
+<td style="text-align:left">The source URL used for the installation. Required for methods like <code>script</code>. At least one of <code>package_name</code> or <code>source_url</code> must be present.</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>install_date</code></td>
+<td style="text-align:left">String (ISO 8601)</td>
+<td style="text-align:left">Yes</td>
+<td style="text-align:left">A timestamp recording when the installation was successfully completed.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h6>3.4. The Knowledge Base: The Package Definitions (<code>definitions.toml</code>)</h6>
+<p><code>qet</code> knows where to find software by using a package definitions database, a community-maintained TOML file stored locally at <code>~/.local/share/qet/definitions.toml</code>. This file is a local cache that is kept up-to-date from a remote source repository via the <code>qet update</code> command. It maps <code>qet</code>'s canonical names to their concrete implementations across the Linux software ecosystem.</p>
+<p><strong>Example <code>~/.local/share/qet/definitions.toml</code> snippet:</strong></p>
+<pre><code class="language-toml"># A snippet from the larger community-maintained database.
+
+[&quot;@utils/ripgrep&quot;]
+description = &quot;A fast, line-oriented search tool.&quot;
+apt = { package_name = &quot;ripgrep&quot; }
+dnf = { package_name = &quot;ripgrep&quot; }
+pacman = { package_name = &quot;ripgrep&quot; }
+
+[&quot;@docker/engine&quot;]
+description = &quot;The Docker containerization engine.&quot;
+script = { source_url = &quot;https://get.docker.com&quot; }
+apt = { package_name = &quot;docker-ce&quot; }
+</code></pre>
+<h6>3.5. Command Recipes: The Method Definitions (<code>methods.toml</code>)</h6>
+<p>This file is shipped with <code>qet</code> and provides the command-line &quot;recipes&quot; for all supported installation methods. It is the key to the &quot;Plumbing First&quot; strategy, defining the stable, script-friendly commands <code>qet</code> should use for parsing, as well as the user-facing &quot;raw&quot; commands for the graceful fallback mechanism. It resides in a system-wide location like <code>/usr/share/qet/methods.toml</code>.</p>
+<p><strong>Example <code>methods.toml</code> snippet:</strong></p>
+<pre><code class="language-toml">[apt]
+# The fallback command for raw streaming
+add_raw = &quot;sudo apt install -y {package_name}&quot;
+# The primary command for qet to parse, using the stable `apt-get` interface
+add_plumbing = &quot;sudo apt-get install -y {package_name}&quot;
+remove_plumbing = &quot;sudo apt-get remove -y {package_name}&quot;
+upgrade_plumbing = &quot;sudo apt-get install --only-upgrade -y {package_name}&quot;
+# A stable command to check for a package's version info
+upgrade_check_plumbing = &quot;apt-cache policy {package_name}&quot;
+</code></pre>
+<h6>4. Command-Line Interface (CLI) Specification</h6>
+<p>This section details the behavior of each user-facing command.</p>
+<h6><code>qet add</code></h6>
+<p>Installs a new package. It automatically finds the best source based on <code>conf.toml</code> but can be manually overridden.</p>
+<ul>
+<li><strong>Usage:</strong> <code>qet add [--using METHOD] &lt;qet_name&gt;</code></li>
+</ul>
+<h6><code>qet remove</code></h6>
+<p>Removes a package previously installed by <code>qet</code>.</p>
+<ul>
+<li><strong>Usage:</strong> <code>qet remove &lt;qet_name&gt;</code></li>
+</ul>
+<h6><code>qet upgrade</code></h6>
+<p>Upgrades one or all packages to their latest available versions.</p>
+<ul>
+<li><strong>Usage:</strong> <code>qet upgrade &lt;qet_name&gt; | --all</code></li>
+</ul>
+<h6><code>qet update</code></h6>
+<p>Updates the local package definitions database from its remote source.</p>
+<ul>
+<li><strong>Usage:</strong> <code>qet update</code></li>
+</ul>
+<h6><code>qet sync</code></h6>
+<p>Synchronizes the system with a <code>Qetfile</code>. It performs a two-phase process of analysis and execution to handle cross-distribution migration gracefully.</p>
+<ul>
+<li><strong>Usage:</strong> <code>qet sync</code></li>
+</ul>
+<h6><code>qet snapshot</code></h6>
+<p>Creates a <code>Qetfile</code> from the current system state and prints it to standard output.</p>
+<ul>
+<li><strong>Usage:</strong> <code>qet snapshot</code></li>
+</ul>
+<h6>5. Unified UI and Execution Logic</h6>
+<p>The implementation of the polished user interface is a core feature.</p>
+<ol>
+<li>
+<p><strong>Prioritize Plumbing:</strong> For any action (e.g., <code>add</code>), the logic must first look for a <code>_plumbing</code> command in <code>methods.toml</code> (e.g., <code>add_plumbing</code>).</p>
+</li>
+<li>
+<p><strong>Attempt Structured Parsing:</strong> If a plumbing command is found, it is executed, and its <code>stdout</code> is captured. A parser specific to that command's output format is engaged. The parser's job is to identify key stages of the process (e.g., &quot;resolving,&quot; &quot;downloading,&quot; &quot;installing&quot;) and report their completion. This data is used to render <code>qet</code>'s own clean, unified UI in real-time.</p>
+</li>
+<li>
+<p><strong>Graceful Fallback:</strong> This is a critical safety mechanism.</p>
+<ul>
+<li>If a <code>_plumbing</code> command is <strong>not defined</strong> for a method, <code>qet</code> must immediately fall back to using the <code>_raw</code> command.</li>
+<li>If the parser for a <code>_plumbing</code> command encounters data it cannot understand (due to a new version, unexpected output, etc.), it must <strong>immediately stop parsing</strong>.</li>
+<li>In either fallback scenario, <code>qet</code> will print a warning to the user, then execute the <code>_raw</code> command and stream its output directly and unfiltered to the console.</li>
+</ul>
+</li>
+<li>
+<p><strong>Error Reporting:</strong> If at any point the underlying command exits with a non-zero status code, <code>qet</code> must halt. It should print a clear, high-level error message and then present the full, captured <code>stderr</code> from the failed command to ensure the user has complete context for debugging.</p>
+</li>
+</ol>
+<h6>6. General Error Handling and System Interaction</h6>
+<ul>
+<li>
+<p><strong>Permissions and <code>sudo</code>:</strong> <code>qet</code> itself must not run with elevated privileges. The command templates in <code>methods.toml</code> will include <code>sudo</code> where necessary. The application relies on the system's <code>sudo</code> facility to handle user authentication.</p>
+</li>
+<li>
+<p><strong>Atomic Writes:</strong> All writes to the <code>manifest.toml</code> file must be atomic to prevent corruption. The standard procedure should be followed: write the new content to a temporary file, and if successful, perform an atomic rename/move to replace the original file.</p>
+</li>
+<li>
+<p><strong>User Interrupts (Ctrl+C):</strong> If a user interrupts an operation while a native package manager is running, <code>qet</code> must terminate gracefully. The manifest file must not be updated, as the success of the operation cannot be confirmed.</p>
+</li>
+<li>
+<p><strong>State Drift:</strong> The specification acknowledges that if a user manages software outside of <code>qet</code> (e.g., with <code>sudo dnf remove htop</code>), the manifest will become out of sync. A future <code>qet verify</code> command can be designed to detect and correct this drift, but it is not part of the v1.0 scope.</p>
+</li>
+</ul>
+
+    </main>
+    <script src="/main.js"></script>
+  </body>
+</html>

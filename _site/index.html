@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>qet - A Meta Package Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/how">How It Works</a>
+      <a href="/docs">Docs</a>
+    </nav>
+    <main>
+      <h1 title="qet">qet</h1>
+<p><code>qet</code> is a command-line tool for Linux that acts as a meta package manager. It provides a unified interface to manage packages from different sources, such as system package managers (apt, dnf, pacman), language-specific managers (pip, npm), and other distribution formats (AppImage, Snap, Flatpak).</p>
+<hr>
+<h2>Why use qet?</h2>
+<p><code>qet</code> simplifies managing software on your Linux system in several ways.</p>
+<p>It offers a <strong>Unified Interface</strong>, allowing you to use a single, consistent command (<code>qet add</code>, <code>qet remove</code>) for all your applications, regardless of their source.</p>
+<p>You retain <strong>Total Control</strong>, deciding which installation method to use for each application, whether you prefer <code>apt</code> for system tools or <code>npm</code> for development utilities.</p>
+<p><strong>Effortless Management</strong> means you no longer need to remember how a specific tool was installed; <code>qet</code> tracks everything, enabling updates or removals with simple commands.</p>
+<p>With <strong>Easy Auditing</strong>, the central manifest provides a clear overview of every <code>qet</code>-installed application and its source.</p>
+<p>Finally, <code>qet</code> facilitates <strong>Reproducible Environments</strong> by allowing you to define your entire software setup in a <code>Qetfile</code>, making it easy to replicate your environment on any new machine.</p>
+<hr>
+<h2>What qet is not</h2>
+<p>It is important to understand what <code>qet</code> is not.</p>
+<p><strong><code>qet</code> is not a package manager</strong> itself; it lacks its own package repository, build system, or distribution infrastructure. Instead, it functions as a meta-manager, sitting atop other package managers.</p>
+<p>Consequently, <strong><code>qet</code> does not replace your system's package manager</strong>; you will still need <code>apt</code>, <code>dnf</code>, <code>pacman</code>, or similar tools installed and operational, as <code>qet</code> merely provides a unified interface to them.</p>
+<p>Furthermore, <strong><code>qet</code> does not resolve dependencies across different managers</strong>. For instance, if you install a package with <code>npm</code>, <code>qet</code> will not use <code>apt</code> to install its system-level dependencies.</p>
+
+    </main>
+    <script src="/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,94 @@
+body {
+  font-family: 'VT323', monospace;
+  background-color: #000;
+  color: #cccccc;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2em;
+  font-size: 1.2em;
+}
+
+nav {
+  display: flex;
+  gap: 1em;
+  margin-bottom: 2em;
+}
+
+nav a {
+  text-decoration: none;
+  color: #007bff;
+}
+
+h1, h2, h3 {
+  font-family: 'VT323', monospace;
+  color: #007bff;
+}
+
+h1 {
+  animation: glitch 1s linear infinite;
+}
+
+pre {
+  background-color: #111;
+  padding: 1em;
+  overflow-x: auto;
+}
+
+code {
+  font-family: 'VT323', monospace;
+}
+
+@keyframes glitch{
+  2%,64%{
+    transform: translate(2px,0) skew(0deg);
+  }
+  4%,60%{
+    transform: translate(-2px,0) skew(0deg);
+  }
+  62%{
+    transform: translate(0,0) skew(5deg); 
+  }
+}
+
+h1:before,
+h1:after{
+  content: attr(title);
+  position: absolute;
+  left: 0;
+}
+
+h1:before{
+  animation: glitchTop 1s linear infinite;
+  clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
+  -webkit-clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
+}
+
+@keyframes glitchTop{
+  2%,64%{
+    transform: translate(2px,-2px);
+  }
+  4%,60%{
+    transform: translate(-2px,2px);
+  }
+  62%{
+    transform: translate(13px,-1px) skew(-13deg); 
+  }
+}
+
+h1:after{
+  animation: glitchBotom 1.5s linear infinite;
+  clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
+  -webkit-clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
+}
+
+@keyframes glitchBotom{
+  2%,64%{
+    transform: translate(-2px,0);
+  }
+  4%,60%{
+    transform: translate(-2px,0);
+  }
+  62%{
+    transform: translate(-22px,5px) skew(21deg); 
+  }
+}
