@@ -3,6 +3,10 @@ layout: layout.njk
 title: Install qet
 ---
 
+<div style="background-color: #ffdddd; border-left: 6px solid #f44336; margin-bottom: 1em; padding: 0.5em 1em;">
+  <strong>Warning:</strong> `qet` is currently a work-in-progress project. It is highly recommended to test it on a non-critical machine or in a virtual environment.
+</div>
+
 <h1 title="Install qet">Install qet</h1>
 
 This page provides instructions on how to download and install the `qet` command-line application.
