@@ -3,8 +3,8 @@ layout: layout.njk
 title: Install qet
 ---
 
-<div style="background-color: #ffe0e0; border-left: 6px solid #cc0000; margin-bottom: 1em; padding: 0.5em 1em;">
-  <strong>Warning:</strong> `qet` is currently a work-in-progress project. It is highly recommended to test it on a non-critical machine or in a virtual environment.
+<div style="background-color: #cc0000; border-left: 6px solid #cc0000; margin-bottom: 1em; padding: 0.5em 1em;">
+  <strong>Warning:</strong> `qet` is currently a work-in-progress project. It is highly recommended to test it on a virtual machine or a disposable environment rather than your primary system.
 </div>
 
 <h1 title="Install qet">Install qet</h1>
