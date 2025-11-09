@@ -12,42 +12,36 @@ This page provides instructions on how to download and install the `qet` command
 Before installing `qet`, ensure you have the following installed on your system:
 
 *   **Python 3.8+**: `qet` is a Python application.
-*   **pip**: Python's package installer.
+*   **Git**: For cloning the repository.
 
-## Installation Methods
+## Installation
 
-### 1. Using pip (Recommended)
-
-The easiest way to install `qet` is via `pip`, Python's package installer. This method ensures you get the latest stable release and handles dependencies automatically.
-
-```bash
-pip install qet-cli
-```
-
-After installation, you should be able to run `qet` from your terminal:
-
-```bash
-qet --version
-```
-
-### 2. From Source (for Developers)
-
-If you want to contribute to `qet` or need the very latest development version, you can install it directly from the source code.
+The `qet` application can be installed directly from its GitHub repository. This method ensures you get the latest version of the application.
 
 1.  **Clone the repository:**
+    First, clone the `qet-cli` repository from GitHub to your local machine:
+
     ```bash
     git clone https://github.com/qetapp/qet-cli.git
     cd qet-cli
     ```
 
-2.  **Install in editable mode:**
+2.  **Install dependencies and `qet`:**
+    `qet` is a Python application. You can install it and its dependencies using `pip` in editable mode. This is useful for development and ensures that any changes you make to the source code are immediately reflected.
+
     ```bash
     pip install -e .
     ```
 
-    This installs `qet` in "editable" mode, meaning any changes you make to the source code will be immediately reflected when you run `qet`.
+    If you only want to install the dependencies without installing `qet` in editable mode, you can use:
+
+    ```bash
+    pip install .
+    ```
 
 3.  **Verify installation:**
+    After installation, you should be able to run `qet` from your terminal:
+
     ```bash
     qet --version
     ```
